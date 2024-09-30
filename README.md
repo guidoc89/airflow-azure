@@ -1,4 +1,22 @@
 
+Test project that that integrates Azure Data Factory + Gen2 Storage + Databricks, orchestrated with Airflow.  
+
+Will get Tennis csv data (players data and singles matches data from 2000-2024) from a GitHub repo in order to calculate relevant metrics like:
+- Win %
+- Tournaments played
+- Tournament %: the prob of winning a tournament they participate in
+- Grand Slams appearances 
+- Grand Slams win %
+- Grand Slams %: the prob of winning a GS they participate in
+- Finals played
+- Finals win %
+
+The analysis part is not the focus (the Databricks notebooks can be found in notebooks/), but the integration between the Azure services 
+(Service Principals, Key Vault and secrets, Storage Account, authentication methods, Databricks, etc) and their orchestration using Airflow.
+
+Hardest part? The Airflow connections setup in the UI, had to hand-try them, since there are a various ways to configure them, also depending on 
+the type of Airflow Connectors / Sensors and the protocols to use  (ABFSS, recommended, WASBS).
+
 ## Configure Gen2 read/mount to Databricks
 Check all of the [available options](https://learn.microsoft.com/en-us/azure/databricks/connect/storage/azure-storage) for connection.
 
@@ -56,5 +74,16 @@ The connection string is visible inside of the Storage Account secrets, Azure au
 ## Workflow
 
 1. See if the data exists in the Data Lake Gen2 storage
-1. If it doesnt, import it 
-1. If it does, can move on to the processing part
+    1. If it doesnt, import it into the Bronze layer
+    1. If it does, skip and move on to the processing part
+1. Simple Bronze -> Silver layer processing: 
+    - column names
+    - parse date formats
+    - try to complete some missing values using another table values (first, last names)
+    - standardize naming conventions (could happen that a full name like "First-Second Last" appears as "First Second Last", without the "-" for example)
+    - add some helper cols 
+1. Simple Silver -> Gold layer processing: 
+    - metrics calculations
+
+1. TODO: add Azure Synapse + Power BI 
+

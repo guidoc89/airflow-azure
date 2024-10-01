@@ -24,19 +24,3 @@ dbutils.fs.mount(
   mount_point = "/mnt/gold",
   extra_configs = configs,
 )
-
-# COMMAND ----------
-
-dbutils.fs.ls("/mnt/")
-
-# COMMAND ----------
-
-dbutils.fs.ls("/mnt/")
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-dbutils.

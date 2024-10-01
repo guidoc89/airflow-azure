@@ -17,6 +17,18 @@ The **analysis part is not the focus** (the Databricks notebooks can be found in
 Hardest part? The [Airflow connections](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/connections.html) setup in the UI, had to hand-try them, since there are a various ways to configure them, also depending on 
 the type of Airflow Connectors / Sensors and the protocols to use  (ABFSS, recommended, WASBS).
 
+## Running Airflow
+I will be running the bootstrapped `standalone` [Airflow  version](https://airflow.apache.org/docs/apache-airflow/stable/start.html) locally, since my pc doesn't have the memory to run the Docker version, can barely fit the images into memory.
+
+In another machine I ran it using 2 docker-compose versions, the [official](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html) one [(fetches this one)](https://airflow.apache.org/docs/apache-airflow/2.10.2/docker-compose.yaml), but removing the CeleryExecutor and celery, redis, and flower services, and another lightweight one
+with just **Airflow scheduler, webserver with SequentialExecutor and PostgreSQL**, and an entrypoint. This worked in another machine but not in my personal one, leaving it just in case, will still be running locally with standalone for testing.
+
+* *Docker env variables*: showing default values for demonstration purposes, and a randomly generated [webserver secret key](https://airflow.apache.org/docs/helm-chart/stable/production-guide.html#webserver-secret-key).
+
+##### Standalone setup
+As-is standalone options fails with multiple tasks, it freezes the scheduler continually due to using the default `SQLite DB` that has no parallelization, and `SequentialExecutor`, that only run tasks sequentially.
+When trying to fetch the multiple sources of  data the defaults don't work at all, so [migrate to a PostgreSQL](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html#setting-up-a-postgresql-database) one use a [LocalExecutor](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/executor/local.html), allowing for parallelization.
+
 ## Configure Gen2 read/mount to Databricks
 
 Check how to connect to  [Azure Data Lake and Blob Storage](https://learn.microsoft.com/en-us/azure/databricks/connect/storage/azure-storage).

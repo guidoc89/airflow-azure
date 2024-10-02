@@ -1,3 +1,5 @@
+# :cloud: Azure + Airflow integration
+
 
 Test project that integrates Azure Data Factory + Azure Gen2 Storage + Azure Databricks, orchestrated with Airflow.  
 
@@ -11,13 +13,14 @@ Will get [Tennis CSV data](https://github.com/JeffSackmann/tennis_atp/tree/maste
 - Finals played
 - Finals win %
 
+
 The **analysis part is not the focus** (the Databricks notebooks can be found in notebooks/), but the ***integration between the Azure services 
 (Service Principals, Key Vault and secrets, Storage Account, authentication methods, Databricks, etc) and their orchestration using Airflow***.
 
-Hardest part? The [Airflow connections](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/connections.html) setup in the UI, had to hand-try them, since there are a various ways to configure them, also depending on 
+**Hardest part?** The [Airflow connections](https://airflow.apache.org/docs/apache-airflow/stable/authoring-and-scheduling/connections.html) setup in the UI, had to hand-try them, since there are a various ways to configure them, also depending on 
 the type of Airflow Connectors / Sensors and the protocols to use  (ABFSS, recommended, WASBS).
 
-## Running Airflow
+## :rocket: Running Airflow
 I will be running the bootstrapped `standalone` [Airflow  version](https://airflow.apache.org/docs/apache-airflow/stable/start.html) locally, since my pc doesn't have the memory to run the Docker version, can barely fit the images into memory.
 
 In another machine I ran it using 2 docker-compose versions, the [official](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html) one [(fetches this one)](https://airflow.apache.org/docs/apache-airflow/2.10.2/docker-compose.yaml), but removing the CeleryExecutor and celery, redis, and flower services, and another lightweight one
@@ -29,7 +32,7 @@ with just **Airflow scheduler, webserver with SequentialExecutor and PostgreSQL*
 As-is standalone options fails with multiple tasks, it freezes the scheduler continually due to using the default `SQLite DB` that has no parallelization, and `SequentialExecutor`, that only run tasks sequentially.
 When trying to fetch the multiple sources of  data the defaults don't work at all, so [migrate to a PostgreSQL](https://airflow.apache.org/docs/apache-airflow/stable/howto/set-up-database.html#setting-up-a-postgresql-database) one use a [LocalExecutor](https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/executor/local.html), allowing for parallelization.
 
-## Configure Gen2 read/mount to Databricks
+## :gear: Configure Gen2 read / mount to Databricks
 
 Check how to connect to  [Azure Data Lake and Blob Storage](https://learn.microsoft.com/en-us/azure/databricks/connect/storage/azure-storage).
 
@@ -48,12 +51,12 @@ First, follow the [official tutorial](https://learn.microsoft.com/en-us/azure/da
 Mount a volume following the [example Python code](https://learn.microsoft.com/en-us/azure/databricks/dbfs/mounts).
 
 
-## ADF Linked Services
+## :link: ADF Linked Services
 
 `AutoResolveIntegrationRuntime`: when interacting with Azure services like Databricks, Blob Storage, etc. If connecting with On-Premises DB for example you need to create
 a different Integration Runtime, and configure it via a *Network environment* (Azure, Self-Hosted, which runs activities on-premises / private network) or *External Resource* (another resource)
 
-## Give ADF access to the key vault
+## :key: Give ADF access to the key vault
 
 In order to create a connection between Databricks and ADF, you need to create a **linked service between them**, and authenticate its connection.
 There are various ways to authenticate, I'm going to go with `Access Token`, in which you create a Databricks token (the same way that you'd create one 
@@ -78,7 +81,7 @@ So the steps would be:
 
 IMPORTANT: remember to `Publish the changes`.
 
-## Configure Airflow Gen2 Data Lake connection
+## :gear: Configure Airflow Gen2 Data Lake connection
 
 In order to be able to communicate with the Storage Account, since I'm are going to be checking for the existence of data files to see if I need to
 run the data extraction flow or not, I need to add an Airflow connection to the service.
@@ -88,12 +91,12 @@ I've tried a lot of them, Data Lake Storage V2, Azure Data Lake, Container Insta
 The connection string is visible inside of the Storage Account secrets, Azure automatically generates 2 keys and 2 connection strings when creating the service, use any of them as parameter for the connection.
 
 
-## Workflow
+## :clipboard: Workflow
 
-1. See if the data exists in the Data Lake Gen2 storage
+1. See if the data exists in the Data Lake Gen2 storage:
     * If it doesn't, import it into the Bronze layer
     * If it does, skip and move on to the processing part
-    * Leave the Bronze layer with the raw data, exactly as the source
+    * Bronze layer = raw data, exactly as the source, no changes
 
 1. Simple Bronze -> Silver layer processing: 
     - column names
@@ -106,3 +109,10 @@ The connection string is visible inside of the Storage Account secrets, Azure au
     - eventual Gold CSV (TODO: delta files)
 1. TODO: add Azure Synapse + Power BI 
 
+## :date: Roadmap 
+1. Notebooks modules: classes, functions modules 
+1. Synapse integration + Power BI integration
+1. Testing (pytest): related with 1), testing utility functions
+1. Create a PostgreSQL DB
+1. Create a Cosmos DB
+1. Add Kafka streaming

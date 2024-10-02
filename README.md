@@ -48,6 +48,11 @@ First, follow the [official tutorial](https://learn.microsoft.com/en-us/azure/da
 Mount a volume following the [example Python code](https://learn.microsoft.com/en-us/azure/databricks/dbfs/mounts).
 
 
+## ADF Linked Services
+
+`AutoResolveIntegrationRuntime`: when interacting with Azure services like Databricks, Blob Storage, etc. If connecting with On-Premises DB for example you need to create
+a different Integration Runtime, and configure it via a *Network environment* (Azure, Self-Hosted, which runs activities on-premises / private network) or *External Resource* (another resource)
+
 ## Give ADF access to the key vault
 
 In order to create a connection between Databricks and ADF, you need to create a **linked service between them**, and authenticate its connection.
@@ -88,6 +93,7 @@ The connection string is visible inside of the Storage Account secrets, Azure au
 1. See if the data exists in the Data Lake Gen2 storage
     * If it doesn't, import it into the Bronze layer
     * If it does, skip and move on to the processing part
+    * Leave the Bronze layer with the raw data, exactly as the source
 
 1. Simple Bronze -> Silver layer processing: 
     - column names

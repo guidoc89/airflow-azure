@@ -1,47 +1,31 @@
 # Databricks notebook source
 # Imports
-from pyspark.sql.functions import input_file_name, split, col, coalesce, concat_ws, size, when, to_date
+from pyspark.sql.functions import (
+    input_file_name,
+    split,
+    col,
+    coalesce,
+    concat_ws,
+    size,
+    when,
+    to_date,
+)
 from pyspark.sql.types import IntegerType
+from file_names import CsvFileName
+from paths import BRONZE_PATH, SILVER_PATH
+from schemas import (
+    PlayersSchema,
+    PlayersCreatedSchema,
+    PlayersStatisticsSchema,
+    MatchesSchema,
+    MatchesCreatedSchema,
+)
 
+# fmt: off
 # COMMAND ----------
-
-# Schema namespaces
-class PlayersSchema:
-    PLAYER_ID = "player_id"
-    NAME_FIRST = "name_first"
-    NAME_LAST = "name_last"
-    IOC = "ioc"
-    DOB = "dob"
-
-class PlayersCreatedSchema:
-    FULL_NAME = "full_name"
-    COUNTRY = "country"
-
-class MatchesSchema:
-    WINNER_NAME = "winner_name"
-    LOSER_NAME = "loser_name"
-    WINNER_ID = "winner_id"
-    LOSER_ID = "loser_id"
-    TOURNEY_NAME = "tourney_name"
-    SURFACE = "surface"
-    ROUND = "round"
-    WINNER_BP_SAVED = "w_bpSaved"
-    WINNER_BP_FACED = "w_bpFaced"
-    TOURNEY_LEVEL = "tourney_level"
-
-class MatchesCreatedSchema:
-    YEAR = "year"
-    PATH = "path"
-    LOSER_FULL_NAME = "loser_full_name"
-    WINNER_FULL_NAME  = "winner_full_name"
-
-
-# COMMAND ----------
-
-BRONZE_PATH = "/mnt/bronze"
-SILVER_PATH = "/mnt/silver"
 
 bronze_files = dbutils.fs.ls(BRONZE_PATH)
+# TODO: have a CsvFileName class but its not connected with these strings, add a way to connect them 
 matches_csv_paths = [file.path for file in bronze_files if "matches" in file.name]
 players_csv_path = [file.path for file in bronze_files if "players" in file.name][0]
 
@@ -59,7 +43,7 @@ df_matches = df_matches.withColumn(MatchesCreatedSchema.YEAR, split(split(df_mat
 # COMMAND ----------
 
 # Dont even need this col
-df_players = df_players.drop("wikidata_id")
+df_players = df_players.drop(PlayersSchema.WIKIDATA_ID)
 
 # There are some players who dont have first or last name, and that they are not found in the df_matches by their IDs, so just remove them
 df_players = df_players.filter(
@@ -149,11 +133,11 @@ df_matches = df_matches.withColumn(
 )
 
 # We've created duplicated "player_id" cols (from "m2" and "p2"), alongside "winner_full_name" and "loser_full_name" cols, remove them
-df_matches = df_matches.drop(MatchesCreatedSchema.WINNER_FULL_NAME, MatchesCreatedSchema.LOSER_FULL_NAME, "player_id")
+df_matches = df_matches.drop(MatchesCreatedSchema.WINNER_FULL_NAME, MatchesCreatedSchema.LOSER_FULL_NAME, PlayersSchema.PLAYER_ID)
 
 
 # COMMAND ----------
 
 # Save them as csv (TODO: use delta format later) in the silver layer
-df_players.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/df_players.csv")
-df_matches.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/df_matches.csv")
+df_players.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/{CsvFileName.DF_PLAYERS}")
+df_matches.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/{CsvFileName.DF_MATCHES}")

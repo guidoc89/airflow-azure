@@ -1,6 +1,5 @@
 # Databricks notebook source
 # Imports
-from notebooks.file_names import CsvFileName
 from pyspark.sql.functions import (
     input_file_name,
     split,
@@ -17,7 +16,9 @@ from pyspark.sql.functions import (
     expr,
 )
 from pyspark.sql.types import IntegerType
-from paths import SILVER_PATH, GOLD_PATH
+from io_utils.df_names import DataFrameNames
+from io_utils.df_factory import DataFrameHandlerFactory, Extension
+from io_utils.paths import Paths
 from schemas import (
     PlayersSchema,
     PlayersCreatedSchema,
@@ -31,15 +32,20 @@ from cols_uniques import TourneyLevel, Round
 
 # COMMAND ----------
 
-silver_files = dbutils.fs.ls(SILVER_PATH)
-matches_csv_path = [file.path for file in silver_files if "matches" in file.name][0]
-players_csv_path = [file.path for file in silver_files if "players" in file.name][0]
+silver_files = dbutils.fs.ls(Paths.SILVER_PATH.value)
+# matches_csv_path = [file.path for file in silver_files if "matches" in file.name][0]
+# players_csv_path = [file.path for file in silver_files if "players" in file.name][0]
+
 
 # COMMAND ----------
 
-# Instantiate spark dfs from paths
-df_players = spark.read.format("csv").option("header", "true").load(players_csv_path)
-df_matches = spark.read.format("csv").option("header", "true").load(matches_csv_path)
+# Handlers
+delta_handler = DataFrameHandlerFactory.get_handler(Extension.DELTA)
+csv_handler = DataFrameHandlerFactory.get_handler(Extension.CSV)
+
+# For loading, use the csv handler. For writing, the delta one
+df_players = csv_handler.load(spark=spark, path=Paths.SILVER_PATH, name=DataFrameNames.DF_PLAYERS)
+df_matches = csv_handler.load(spark=spark, path=Paths.SILVER_PATH, name=DataFrameNames.DF_MATCHES)
 
 # COMMAND ----------
 
@@ -336,7 +342,19 @@ df_gs_statistics = df_gs_statistics.withColumn(
 
 # COMMAND ----------
 
-# Save them as csv (TODO: use delta format later) in the silver layer
-df_players_statistics.write.mode("overwrite").option("header", "true").format("csv").save(f"{GOLD_PATH}/{CsvFileName.DF_PLAYERS}")
-df_gs_statistics.write.mode("overwrite").option("header", "true").format("csv").save(f"{GOLD_PATH}/{CsvFileName.DF_GS_STATISTICS}")
-df_matches.write.mode("overwrite").option("header", "true").format("csv").save(f"{GOLD_PATH}/{CsvFileName.DF_MATCHES}")
+# Save them as delta format 
+delta_handler.save(
+    path=Paths.GOLD_PATH,
+    df=df_players,
+    name=DataFrameNames.DF_PLAYERS,
+)
+delta_handler.save(
+    path=Paths.GOLD_PATH,
+    df=df_gs_statistics,
+    name=DataFrameNames.DF_GS_STATISTICS,
+)
+delta_handler.save(
+    path=Paths.GOLD_PATH,
+    df=df_matches,
+    name=DataFrameNames.DF_MATCHES,
+)

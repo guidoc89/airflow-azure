@@ -11,8 +11,9 @@ from pyspark.sql.functions import (
     to_date,
 )
 from pyspark.sql.types import IntegerType
-from file_names import CsvFileName
-from paths import BRONZE_PATH, SILVER_PATH
+from io_utils.df_names import DataFrameNames
+from io_utils.df_factory import DataFrameHandlerFactory, Extension
+from io_utils.paths import Paths
 from schemas import (
     PlayersSchema,
     PlayersCreatedSchema,
@@ -24,14 +25,13 @@ from schemas import (
 # fmt: off
 # COMMAND ----------
 
-bronze_files = dbutils.fs.ls(BRONZE_PATH)
-# TODO: have a CsvFileName class but its not connected with these strings, add a way to connect them 
+bronze_files = dbutils.fs.ls(Paths.BRONZE_PATH.value)
 matches_csv_paths = [file.path for file in bronze_files if "matches" in file.name]
-players_csv_path = [file.path for file in bronze_files if "players" in file.name][0]
 
 # Instantiate spark dfs from paths
-df_players = spark.read.format("csv").option("header", "true").load(players_csv_path)
-df_matches = spark.read.format("csv").option("header", "true").load(matches_csv_paths)
+csv_handler = DataFrameHandlerFactory.get_handler(Extension.CSV)
+df_players = csv_handler.load(spark=spark, path=Paths.BRONZE_PATH, name=DataFrameNames.ATP_PLAYERS)
+df_matches = csv_handler.load(spark=spark, path=matches_csv_paths, name=DataFrameNames.DF_MATCHES)
 
 # COMMAND ----------
 
@@ -139,5 +139,13 @@ df_matches = df_matches.drop(MatchesCreatedSchema.WINNER_FULL_NAME, MatchesCreat
 # COMMAND ----------
 
 # Save them as csv (TODO: use delta format later) in the silver layer
-df_players.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/{CsvFileName.DF_PLAYERS}")
-df_matches.write.mode("overwrite").option("header", "true").format("csv").save(f"{SILVER_PATH}/{CsvFileName.DF_MATCHES}")
+csv_handler.save(
+    path=Paths.SILVER_PATH,
+    df=df_players,
+    name=DataFrameNames.DF_PLAYERS,
+)
+csv_handler.save(
+    path=Paths.SILVER_PATH,
+    df=df_matches,
+    name=DataFrameNames.DF_MATCHES,
+)

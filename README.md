@@ -110,9 +110,9 @@ The connection string is visible inside of the Storage Account secrets, Azure au
 1. TODO: add Azure Synapse + Power BI 
 
 ## :date: Roadmap 
-1. Notebooks modules: classes, functions modules 
-1. Synapse integration + Power BI integration
-1. Testing (pytest): related with 1), testing utility functions
-1. Create a PostgreSQL DB
-1. Create a Cosmos DB
-1. Add Kafka streaming
+1. [x] Notebooks modules: classes, functions modules: still missing some better structure for columns/schemas.
+1. [ ] Synapse integration + Power BI integration
+1. [ ] Testing (pytest): related with 1), testing utility functions
+1. [ ] Create a PostgreSQL DB
+1. [ ] Create a Cosmos DB
+1. [ ] Add Kafka streaming
